@@ -3,6 +3,8 @@ from datetime import datetime
 from typing import List
 from api import fetch_available_maps
 from templates import generate_map_values, MapValues
+# from xyz import exec_my_script
+
 
 available_map_values: List[str] = fetch_available_maps()
 
@@ -30,3 +32,8 @@ with st.form(key='my_form'):
 
         with open("generated_yaml.yaml", "w") as file:
             file.write(generated_yaml)
+
+        # with open("xyz.py", "r") as script:
+        #     exec(script)
+
+        # exec_my_script()

@@ -5,6 +5,7 @@ import os
 import re
 import timeit
 import test
+from .authenticate import auth_get_token
 from typing import List  ############
 
 #import authenticate.auth_get_token
@@ -33,10 +34,7 @@ def test000():
     return "hola test"
 
 def fetch_labels() -> List[str]:
-#    token = test.test123()
-#    token=authenticate.auth_get_token()
-    token= "hola"
-#    token=test000()
+    token=auth_get_token()
     return token
 
 #json_labels_all=labels2.get_labels_all(token)   

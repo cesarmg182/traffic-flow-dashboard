@@ -1,10 +1,14 @@
+from pathlib import Path
 import streamlit as st
 from datetime import datetime
 from typing import List
-from apigc import fetch_available_maps,fetch_available_label_group,fetch_available_label
+from apigc import fetch_available_maps, fetch_available_label_group, fetch_available_label
 from templates import generate_map_values, MapValues
 #from test import exec_my_script
 import os
+
+import aggregated_flows_export as afe
+
 os.chdir(r'C:\cesar\webserver\traffic-flow-dashboard')
 
 available_label: List[str] = fetch_available_label()
@@ -14,10 +18,9 @@ available_label_group: List[str] = fetch_available_label_group()
 with st.form(key='my_form'):
     st.sidebar.image("logo.jpg")
     st.sidebar.title("Description")
-    oprtion= st.sidebar.selectbox("Dashboard",("Flow Traffic","Reports"))
+    oprtion = st.sidebar.selectbox("Dashboard", ("Flow Traffic", "Reports"))
     st.sidebar.write("-----------")
-    
-    
+
     st.title("FLOW TRAFFIC Report")
 
     st.sidebar.write(datetime.now())
@@ -27,7 +30,8 @@ with st.form(key='my_form'):
     end_time = st.time_input("End Time", datetime.now())
     selected_map = st.selectbox('Select your map', available_map_values)
     include_label = st.selectbox('Include filter label', available_label)
-    exclude_label_group = st.selectbox('Exclude filter label group', available_label_group)
+    exclude_label_group = st.selectbox(
+        'Exclude filter label group', available_label_group)
 
     ignore_internal_traffic = st.checkbox('Ignore Internal traffic')
     delete_temp_map = st.checkbox('Delete Temporal Map')
@@ -55,17 +59,20 @@ with st.form(key='my_form'):
 
         # st.write(f"```yaml\n{generated_yaml}\n```")
 
-        with open("aggregated_flows_export\generated_yaml.yaml", "w") as file:
-        #with open("generated_yaml.yaml", "w") as file:
-
+        with open("generated_yaml.yaml", "w") as file:
             file.write(generated_yaml)
-            #exec(open("aggregated_flows_export\\aggregated_flows_export.py").read())
-            #exec(open("test123.py").read())
-            #aggregated_flows_export.main()
+
+        # the generated yaml file exists
+
+        afe.main()
+
+        # exec(open("aggregated_flows_export\\aggregated_flows_export.py").read())
+        # exec(open("test123.py").read())
+        # aggregated_flows_export.main()
 
        # with open("aggregated_flows_export\\aggregated_flows_export.py", "r") as script:
-           # exec(script)
-            #exec_my_script()
+        # exec(script)
+        # exec_my_script()
 
-            #aggregated_flows_export.main()
-        #aggregated_flows_export()
+        # aggregated_flows_export.main()
+        # aggregated_flows_export()

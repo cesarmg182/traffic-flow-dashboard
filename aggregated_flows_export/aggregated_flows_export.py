@@ -28,7 +28,8 @@ from common.maps.exceptions import SavedMapException, NoFlowsMatchTheFilter, Map
 from common.labels.exceptions import IllegalLabelException, LabelNotFoundInCentra
 from save_flows_to_xlsx import save_flows_to_xlsx
 
-DEFAULT_ARGUMENTS_FILE_LOCATION = Path(os.path.dirname(os.path.realpath(__file__))).joinpath("generated_yaml.yaml")
+DEFAULT_ARGUMENTS_FILE_LOCATION = Path(os.path.dirname(
+    os.path.realpath(__file__))).joinpath("generated_yaml.yaml")
 DEFAULT_EXPORT_JOB_NAME = "Aggregated Flows Export *.xlsx"
 BASE_LOGGER_NAME = "guardicore"
 
@@ -47,6 +48,7 @@ class ExportFlowsFromMap:
     This class is intended to export the network flows which match the provided filter and time range from Centra,
     aggregate them (or not) and return a list of aggregated flows.
     """
+
     def __init__(self,
                  gc_api: RESTManagementAPI,
                  flows_start_time: datetime,
@@ -103,7 +105,8 @@ class ExportFlowsFromMap:
         :param output_flows_count: Whether to include flows count in the export. Passing True might cause the export to
         take longer, or even to fail in very large exports.
         """
-        self.logger = logging.getLogger('guardicore.' + self.__class__.__name__)
+        self.logger = logging.getLogger(
+            'guardicore.' + self.__class__.__name__)
         self.gc_api = gc_api
         self.flows_start_time = flows_start_time
         self.flows_end_time = flows_end_time
@@ -147,13 +150,16 @@ class ExportFlowsFromMap:
             self.logger.info("The saved map is empty. No flows to export")
             return []
         try:
-            aggregated_flows = self.export_flows_from_map(self.map_data, include_filter, exclude_filter)
+            aggregated_flows = self.export_flows_from_map(
+                self.map_data, include_filter, exclude_filter)
         except NoFlowsMatchTheFilter:
-            self.logger.info("There are no flows matching the provided filter. No flows to export")
+            self.logger.info(
+                "There are no flows matching the provided filter. No flows to export")
             return []
 
         if self.delete_temporary_map and not self.flows_are_exported_from_a_pre_existing_map:
-            logger.info(f"Deleting the temporary saved map {self.map_data['name']}")
+            logger.info(
+                f"Deleting the temporary saved map {self.map_data['name']}")
             try:
                 self.gc_api.delete_saved_map(self.map_data['id'])
                 logger.info(f"Successfully deleted the map")
@@ -174,7 +180,8 @@ class ExportFlowsFromMap:
         :return: The map's data dict, as it is returned from Centra API
         """
         if self.flows_are_exported_from_a_pre_existing_map:
-            logger.info(f"Using the existing map with map id {self.pre_existing_map_id} for the flows export")
+            logger.info(
+                f"Using the existing map with map id {self.pre_existing_map_id} for the flows export")
             return get_existing_saved_map_data(self.gc_api, self.pre_existing_map_id)
         else:
             logger.info(f"Generating map '{self.map_to_generate_name}'.")
@@ -204,12 +211,14 @@ class ExportFlowsFromMap:
         """
         aggregated_flows = []
         if not self.enhanced_flow_csv_export_is_on:
-            protocols = include_filter.get("protocols") if include_filter.get("protocols") else ["TCP", "UDP"]
+            protocols = include_filter.get("protocols") if include_filter.get(
+                "protocols") else ["TCP", "UDP"]
         else:
             protocols = [""]
 
         for protocol in protocols:
-            logger.info(f"Generating permalink for {protocol + ' ' if protocol else ''}connections")
+            logger.info(
+                f"Generating permalink for {protocol + ' ' if protocol else ''}connections")
             if protocol:
                 include_filter["protocols"] = [protocol]
             try:
@@ -227,7 +236,8 @@ class ExportFlowsFromMap:
                 continue
             except GraphGenerationTimedOut:
                 self.logger.warning(f"The Graph request timed out")
-                self.logger.info("Trying to generate permalink without expanding VMs")
+                self.logger.info(
+                    "Trying to generate permalink without expanding VMs")
                 objects_to_expand = {obj_type for obj_type in self.objects_to_expand
                                      if obj_type not in ["vm", "Process"]}
                 permalink_id = generate_permalink(self.gc_api, map_data["id"], map_data["start_time_filter"],
@@ -239,11 +249,13 @@ class ExportFlowsFromMap:
                 logger.info(f"Successfully generated permalink for {protocol} connections. "
                             f"Permalink id: {permalink_id}")
             else:
-                logger.info(f"Successfully generated permalink. Permalink id: {permalink_id}")
+                logger.info(
+                    f"Successfully generated permalink. Permalink id: {permalink_id}")
             logger.info(f"Downloading flows from permalink id {permalink_id}")
             raw_flows = export_flows_from_permalink(self.gc_api, permalink_id)
 
-            aggregated_flows.extend(self.process_raw_flows(raw_flows, override_flows_protocol=protocol))
+            aggregated_flows.extend(self.process_raw_flows(
+                raw_flows, override_flows_protocol=protocol))
 
         if not aggregated_flows:
             raise NoFlowsMatchTheFilter()
@@ -264,14 +276,17 @@ class ExportFlowsFromMap:
         flow_aggregation_tuple_to_flow_index: Dict[Tuple[str], int] = {}
 
         for raw_flow in raw_flows:
-            all_src_labels = raw_flow['source_labels'].split(',') if raw_flow.get('source_labels') else []
+            all_src_labels = raw_flow['source_labels'].split(
+                ',') if raw_flow.get('source_labels') else []
             src_aggregation_labels: Dict[str, List[str]] = defaultdict(list)
             src_additional_labels = []
             for label in all_src_labels:
                 try:
-                    key, value = label.split(': ')  # ValueError will be raised if there more or less than 1 ':'
+                    # ValueError will be raised if there more or less than 1 ':'
+                    key, value = label.split(': ')
                 except ValueError:
-                    raise IllegalLabelException(f"The label {label} is illegal")
+                    raise IllegalLabelException(
+                        f"The label {label} is illegal")
                 if key in self.aggregation_keys:
                     src_aggregation_labels[key].append(value)
                 else:
@@ -286,14 +301,17 @@ class ExportFlowsFromMap:
                 src_process = ""
             if "unknown client" in src_application.lower():  # Get rid of unknown source application
                 src_application = ""
-            all_dest_labels = raw_flow['destination_labels'].split(',') if raw_flow.get('destination_labels') else []
+            all_dest_labels = raw_flow['destination_labels'].split(
+                ',') if raw_flow.get('destination_labels') else []
             dest_aggregation_labels: Dict[str, List[str]] = defaultdict(list)
             dest_additional_labels = []
             for label in all_dest_labels:
                 try:
-                    key, value = label.split(': ')  # ValueError will be raised if there more or less than 1 ':'
+                    # ValueError will be raised if there more or less than 1 ':'
+                    key, value = label.split(': ')
                 except ValueError:
-                    raise IllegalLabelException(f"The label {label} is illegal")
+                    raise IllegalLabelException(
+                        f"The label {label} is illegal")
                 if key in self.aggregation_keys:
                     dest_aggregation_labels[key].append(value)
                 else:
@@ -309,7 +327,8 @@ class ExportFlowsFromMap:
                 dest_process = ""
             if "unknown server" in dest_application.lower():  # Get rid of unknown destination application
                 dest_application = ""
-            protocol = override_flows_protocol if override_flows_protocol else raw_flow.get('ip_protocol', "")
+            protocol = override_flows_protocol if override_flows_protocol else raw_flow.get(
+                'ip_protocol', "")
             count = int(raw_flow["count"]) if raw_flow["count"] else ""
             for dest_port in raw_flow['destination_ports'].split(','):
                 flow = AggregatedFlow(src_aggregation_labels, src_asset, src_ip, src_process, src_application,
@@ -323,11 +342,13 @@ class ExportFlowsFromMap:
                 if self.aggregate_similar_flows and flow.is_eligible_for_aggregation():
                     flow_aggregation_tuple = flow.get_flow_aggregation_tuple()
                     if flow_aggregation_tuple in flow_aggregation_tuple_to_flow_index:
-                        similar_flow_index = flow_aggregation_tuple_to_flow_index[flow_aggregation_tuple]
+                        similar_flow_index = flow_aggregation_tuple_to_flow_index[
+                            flow_aggregation_tuple]
                         similar_flow = aggregated_flows[similar_flow_index]
                         similar_flow.aggregate_flow(flow)
                     else:
-                        flow_aggregation_tuple_to_flow_index[flow_aggregation_tuple] = len(aggregated_flows)
+                        flow_aggregation_tuple_to_flow_index[flow_aggregation_tuple] = len(
+                            aggregated_flows)
                         aggregated_flows.append(flow)
                 else:
                     aggregated_flows.append(flow)
@@ -355,7 +376,8 @@ def get_centra_login_details(management_address, auth_username, auth_password,
     centra_login_details["auth_username"] = command_line_args.auth_username if \
         command_line_args.auth_username else auth_username
     if not auth_password:
-        auth_password = getpass(f"Please provide the password for the user {centra_login_details['auth_username']}: ")
+        auth_password = getpass(
+            f"Please provide the password for the user {centra_login_details['auth_username']}: ")
     centra_login_details["auth_password"] = auth_password
     centra_login_details["management_port"] = management_port
     return centra_login_details
@@ -384,60 +406,78 @@ def validate_args(args: Dict[str, Union[str, int, bool, List, Dict, datetime]]) 
     assert "auth_username" in args or command_line_args.auth_username, \
         "auth_username parameter must be provided in the yaml or via command line arguments"
     if "auth_password" in args:
-        assert isinstance(args["auth_password"], str), "auth_password parameter must be a string"
+        assert isinstance(args["auth_password"],
+                          str), "auth_password parameter must be a string"
     if "management_port" in args:
-        assert isinstance(args["management_port"], int), "management_port parameter must be an integer"
+        assert isinstance(
+            args["management_port"], int), "management_port parameter must be an integer"
         assert 1 <= args["management_port"] <= 65535, "management_port parameter must be between 1 to 65535"
 
     if "export_file_name" in args:
-        assert isinstance(args["export_file_name"], str), "export_file_name parameter must be a string"
+        assert isinstance(args["export_file_name"],
+                          str), "export_file_name parameter must be a string"
     if "log_verbose" in args:
-        assert isinstance(args["log_verbose"], bool), "log_verbose must be True or False"
+        assert isinstance(args["log_verbose"],
+                          bool), "log_verbose must be True or False"
     if "log_file_path" in args:
-        assert isinstance(args["log_file_path"], str), "log_file_path must be a string"
+        assert isinstance(args["log_file_path"],
+                          str), "log_file_path must be a string"
     if "delete_temporary_map" in args:
-        assert isinstance(args["delete_temporary_map"], bool), "delete_temporary_map must be True or False"
+        assert isinstance(args["delete_temporary_map"],
+                          bool), "delete_temporary_map must be True or False"
 
     if "pre_existing_map_id" in args:
-        assert isinstance(args["pre_existing_map_id"], str), "pre_existing_map_id parameter must be a string"
+        assert isinstance(args["pre_existing_map_id"],
+                          str), "pre_existing_map_id parameter must be a string"
     assert isinstance(args.get("flows_start_time"), datetime), \
         "flows_start_time parameter must be provided in the yaml and must be in the format YYYY-MM-DD HH:MM:SS"
     assert isinstance(args.get("flows_end_time"), datetime), \
         "flows_end_time parameter must be provided in the yaml and must be in the format YYYY-MM-DD HH:MM:SS"
     if "expand_subnets" in args:
-        assert isinstance(args["expand_subnets"], bool), "expand_subnets must be True or False"
+        assert isinstance(args["expand_subnets"],
+                          bool), "expand_subnets must be True or False"
     if "expand_internet" in args:
-        assert isinstance(args["expand_internet"], bool), "expand_internet must be True or False"
+        assert isinstance(args["expand_internet"],
+                          bool), "expand_internet must be True or False"
     if "enhanced_flow_csv_export_is_on" in args:
         assert isinstance(args["enhanced_flow_csv_export_is_on"], bool), \
             "enhanced_flow_csv_export_is_on must be True or False"
 
-    assert isinstance(args.get("include_filter", {}), dict), "include_filter parameter must be a dictionary"
+    assert isinstance(args.get("include_filter", {}),
+                      dict), "include_filter parameter must be a dictionary"
     try:
         _ = get_map_filter_from_args(args["include_filter"])
     except (ValueError, TypeError, AttributeError) as e:
-        raise AssertionError(f"include_filter parameter has illegal value: {e}")
-    assert isinstance(args.get("exclude_filter", {}), dict), "exclude_filter parameter must be a dictionary"
+        raise AssertionError(
+            f"include_filter parameter has illegal value: {e}")
+    assert isinstance(args.get("exclude_filter", {}),
+                      dict), "exclude_filter parameter must be a dictionary"
     try:
         _ = get_map_filter_from_args(args["exclude_filter"])
     except (ValueError, TypeError, AttributeError) as e:
-        raise AssertionError(f"exclude_filter parameter has illegal value: {e}")
+        raise AssertionError(
+            f"exclude_filter parameter has illegal value: {e}")
 
     if "aggregation_keys" in args:
-        assert isinstance(args["aggregation_keys"], list), "aggregation_keys parameter must be a list"
+        assert isinstance(args["aggregation_keys"],
+                          list), "aggregation_keys parameter must be a list"
         for key in "aggregation_keys":
             assert isinstance(key, str), f"aggregation_key {key} is not string"
     if "aggregate_similar_flows" in args:
-        assert isinstance(args["aggregate_similar_flows"], bool), "aggregate_similar_flows must be True or False"
+        assert isinstance(args["aggregate_similar_flows"],
+                          bool), "aggregate_similar_flows must be True or False"
     if "ignore_internal_traffic" in args:
-        assert isinstance(args["ignore_internal_traffic"], bool), "ignore_internal_traffic must be True or False"
+        assert isinstance(args["ignore_internal_traffic"],
+                          bool), "ignore_internal_traffic must be True or False"
     if "aggregate_flows_with_different_processes" in args:
         assert isinstance(args["aggregate_flows_with_different_processes"], bool), \
             "aggregate_flows_with_different_processes must be True or False"
     if "exact_connection_times" in args:
-        assert isinstance(args["exact_connection_times"], bool), "exact_connection_times must be True or False"
+        assert isinstance(args["exact_connection_times"],
+                          bool), "exact_connection_times must be True or False"
     if "output_flows_count" in args:
-        assert isinstance(args["output_flows_count"], bool), "exact_connection_times must be True or False"
+        assert isinstance(args["output_flows_count"],
+                          bool), "exact_connection_times must be True or False"
 
 
 def generate_export_job_name(export_file_name: str) -> str:
@@ -450,15 +490,19 @@ def generate_export_job_name(export_file_name: str) -> str:
 
 def get_args_parser() -> ArgumentParser:
     """Return a command line argument parser for the script"""
-    arg_parser = ArgumentParser(description="Export filtered and aggregated flows from Centra")
-    arg_parser.add_argument("-m", "--management_address", help="Management server FQDN or IP")
-    arg_parser.add_argument("-u", "--auth_username", help="Centra username to use for API authentication")
+    arg_parser = ArgumentParser(
+        description="Export filtered and aggregated flows from Centra")
+    arg_parser.add_argument("-m", "--management_address",
+                            help="Management server FQDN or IP")
+    arg_parser.add_argument("-u", "--auth_username",
+                            help="Centra username to use for API authentication")
     arg_parser.add_argument("--management_port", help="Specify non-default port to connect to Centra API", type=int,
                             default=443)
     arg_parser.add_argument("-a", "--args_file", default=DEFAULT_ARGUMENTS_FILE_LOCATION,
                             help="Specify non-default location to search the yaml file containing the script arguments "
                                  f"(default is {DEFAULT_ARGUMENTS_FILE_LOCATION} in the script's directory)")
-    arg_parser.add_argument("-v", "--verbose", action="store_true", help="Log verbose information")
+    arg_parser.add_argument(
+        "-v", "--verbose", action="store_true", help="Log verbose information")
     return arg_parser
 
 
@@ -466,7 +510,8 @@ def main():
     """ The main function of the script """
     centra_login_details = get_centra_login_details(yaml_args.get("management_address"), yaml_args.get("auth_username"),
                                                     yaml_args.get("auth_password"), yaml_args.get("management_port"))
-    export_job_name = generate_export_job_name(yaml_args.get("export_file_name", DEFAULT_EXPORT_JOB_NAME))
+    export_job_name = generate_export_job_name(
+        yaml_args.get("export_file_name", DEFAULT_EXPORT_JOB_NAME))
     objects_to_expand = {"vm", "Process"}
     if yaml_args.get("expand_subnets", True):
         objects_to_expand.add("subnet")
@@ -478,35 +523,45 @@ def main():
                 gc_api=gc_api,
                 flows_start_time=yaml_args["flows_start_time"],
                 flows_end_time=yaml_args["flows_end_time"],
-                include_filter=get_map_filter_from_args(yaml_args.get("include_filter", {})),
-                exclude_filter=get_map_filter_from_args(yaml_args.get("exclude_filter", {})),
+                include_filter=get_map_filter_from_args(
+                    yaml_args.get("include_filter", {})),
+                exclude_filter=get_map_filter_from_args(
+                    yaml_args.get("exclude_filter", {})),
                 objects_to_expand=objects_to_expand,
                 aggregation_keys=yaml_args.get("aggregation_keys", []),
-                aggregate_similar_flows=yaml_args.get("aggregate_similar_flows", False),
+                aggregate_similar_flows=yaml_args.get(
+                    "aggregate_similar_flows", False),
                 aggregate_flows_with_different_processes=yaml_args.get("aggregate_flows_with_different_processes",
                                                                        False),
-                ignore_internal_traffic=yaml_args.get("ignore_internal_traffic", False),
-                enhanced_flow_csv_export_is_on=yaml_args.get("enhanced_flow_csv_export_is_on", False),
+                ignore_internal_traffic=yaml_args.get(
+                    "ignore_internal_traffic", False),
+                enhanced_flow_csv_export_is_on=yaml_args.get(
+                    "enhanced_flow_csv_export_is_on", False),
                 pre_existing_map_id=yaml_args.get("pre_existing_map_id"),
                 name_for_map_to_generate=f"Generated Map for {export_job_name}",
-                delete_temporary_map=yaml_args.get("delete_temporary_map", False),
-                exact_connection_times=yaml_args.get("exact_connection_times", False),
+                delete_temporary_map=yaml_args.get(
+                    "delete_temporary_map", False),
+                exact_connection_times=yaml_args.get(
+                    "exact_connection_times", False),
                 output_flows_count=yaml_args.get("output_flows_count", False)
             )
             try:
                 flows = flows_exporter.get_aggregated_flows()
             except MapExportTimedOut:
-                logger.error("Could not export the flows because the flows export request has timed out")
+                logger.error(
+                    "Could not export the flows because the flows export request has timed out")
                 logger.info("Try to set expand_subnets and expand_internet parameters to False, or change the filter "
                             "to reduce the number of flows exported")
                 sys.exit(1)
             except IllegalLabelException as e:
                 logger.error(f"An illegal label was found in Centra: {e}.")
-                logger.info(f"This can be caused in case a label in Centra contains a comma.")
+                logger.info(
+                    f"This can be caused in case a label in Centra contains a comma.")
                 logger.info("Please reach for Guardicore support")
                 sys.exit(1)
             except (AssertionError, LabelNotFoundInCentra, SavedMapException) as e:
-                logger.error(f"An error occurred while trying to export the flows from the map: {e}")
+                logger.error(
+                    f"An error occurred while trying to export the flows from the map: {e}")
                 sys.exit(1)
             except ManagementAPIError as e:
                 logger.error(f"Centra API error: {repr(e)}")
@@ -529,47 +584,56 @@ def main():
             else:
                 map_link = ""
             logger.info(f"Writing the flows to '{export_job_name}'")
-            flows_start_time = datetime.fromtimestamp(int(flows_exporter.map_data["start_time_filter"]) / 1000)
-            flows_end_time = datetime.fromtimestamp(int(flows_exporter.map_data["end_time_filter"]) / 1000)
+            flows_start_time = datetime.fromtimestamp(
+                int(flows_exporter.map_data["start_time_filter"]) / 1000)
+            flows_end_time = datetime.fromtimestamp(
+                int(flows_exporter.map_data["end_time_filter"]) / 1000)
             try:
                 save_flows_to_xlsx(flows, yaml_args,
                                    export_job_name, flows_start_time, flows_end_time, map_link,
                                    flows_exporter.flows_are_exported_from_a_pre_existing_map,
                                    aggregation_keys=flows_exporter.aggregation_keys)
             except IOError as e:
-                logger.error(f"Could not write flows to '{export_job_name}': {e.strerror}")
+                logger.error(
+                    f"Could not write flows to '{export_job_name}': {e.strerror}")
                 sys.exit(1)
             logger.info(f"Successfully saved the flows to '{export_job_name}'")
             if flows_exporter.flows_are_exported_from_a_pre_existing_map or not flows_exporter.delete_temporary_map:
-                logger.info(f"Link to the map in centra used to generate the flows export: {map_link}")
+                logger.info(
+                    f"Link to the map in centra used to generate the flows export: {map_link}")
     except ManagementAPIError as error:
         logger.error(f"Could not connect to Centra API: {repr(error)}")
         logger.info("Aborting..")
         sys.exit(1)
 
 
+command_line_args = get_args_parser().parse_args()
+try:
+    yaml_args = read_yaml_args_file(Path(command_line_args.args_file))
+    validate_args(yaml_args)
+except IOError as err:
+    print(
+        f"Could not read args from the file {command_line_args.args_file}: {err.strerror}")
+    sys.exit(1)
+except AssertionError as err:
+    print(f"Invalid or missing arguments were found in the yaml file: {err}")
+    sys.exit(1)
+except yaml.scanner.ScannerError as err:
+    print(
+        f"Could not parse {command_line_args.args_file}: {err.problem} in line {err.context_mark.line}")
+    sys.exit(1)
+
+if command_line_args.verbose or yaml_args.get("log_verbose"):
+    log_level = logging.DEBUG
+else:
+    log_level = logging.INFO
+log_file = Path(yaml_args["log_file_path"]) if yaml_args.get(
+    "log_file_path") else None
+
+log_verbose = command_line_args.verbose or yaml_args.get("log_verbose")
+logger = Logger(logger_name=BASE_LOGGER_NAME,
+                log_level=log_level, log_file_path=log_file)
+
 if __name__ == "__main__":
-    command_line_args = get_args_parser().parse_args()
-    try:
-        yaml_args = read_yaml_args_file(Path(command_line_args.args_file))
-        validate_args(yaml_args)
-    except IOError as err:
-        print(f"Could not read args from the file {command_line_args.args_file}: {err.strerror}")
-        sys.exit(1)
-    except AssertionError as err:
-        print(f"Invalid or missing arguments were found in the yaml file: {err}")
-        sys.exit(1)
-    except yaml.scanner.ScannerError as err:
-        print(f"Could not parse {command_line_args.args_file}: {err.problem} in line {err.context_mark.line}")
-        sys.exit(1)
-
-    if command_line_args.verbose or yaml_args.get("log_verbose"):
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-    log_file = Path(yaml_args["log_file_path"]) if yaml_args.get("log_file_path") else None
-
-    log_verbose = command_line_args.verbose or yaml_args.get("log_verbose")
-    logger = Logger(logger_name=BASE_LOGGER_NAME, log_level=log_level, log_file_path=log_file)
     main()
     sys.exit(0)

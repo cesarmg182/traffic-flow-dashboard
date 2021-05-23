@@ -1,7 +1,36 @@
-start_date: $START_DATE
-end_date: $END_DATE
+management_address:                          # String, w/o https://
+ cus-2580.cloud.guardicore.com/
+auth_username:                               # String
+  admin
+auth_password:                               # String
+  YTg7MDU2Nj35ZmQx
+management_port:                             # Integer
+  443
+export_file_name:                            # String. '*' sign will be replaced with current date and time
+  Aggregated Flows Export *.xlsx
+pre_existing_map_id:                         # String , SIN GUION
 
-key2:
-  key3: $SELECTED_MAP
+flows_start_time: $START_DATE
+flows_end_time: $END_DATE
 
-key5: $IGNORE_INTERNAL_TRAFFIC
+aggregation_keys:                            # List of label keys (strings)
+  - CONX
+  - APP
+  
+pre_existing_map_id:
+  $SELECTED_MAP
+
+expand_subnets: $EXPAND_SUBNETS
+expand_internet: $EXPAND_INTERNET
+ignore_internal_traffic: $IGNORE_INTERNAL_TRAFFIC
+output_flows_count: $OUTPUT_FLOWS_COUNT
+delete_temporary_map:  $DELETE_TEMP_MAP
+
+include_filter: 
+  labels: 
+     $INCLUDE_LABEL
+
+exclude_filter: 
+  label_groups: 
+     $EXCLUDE_LABEL_GROUP
+

@@ -1,0 +1,36 @@
+management_address:                          # String, w/o https://
+ cus-2580.cloud.guardicore.com/
+auth_username:                               # String
+  admin
+auth_password:                               # String
+  YTg7MDU2Nj35ZmQx
+management_port:                             # Integer
+  443
+export_file_name:                            # String. '*' sign will be replaced with current date and time
+  Aggregated Flows Export *.xlsx
+pre_existing_map_id:                         # String , SIN GUION
+
+flows_start_time: 2021-05-22 21:01:00
+flows_end_time: 2021-05-22 21:01:00
+
+aggregation_keys:                            # List of label keys (strings)
+  - CONX
+  - APP
+  
+pre_existing_map_id:
+  INFO
+
+expand_subnets: False
+expand_internet: False
+ignore_internal_traffic: False
+output_flows_count: False
+delete_temporary_map:  False
+
+include_filter: 
+  labels: 
+     - 'APP:INFO'
+
+exclude_filter: 
+  label_groups: 
+     - 'SERVERS:TRANSVERSAL'
+

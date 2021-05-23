@@ -2,9 +2,9 @@ import logging
 
 from typing import Generator, Optional, Dict, Any
 
-from api.guardicore import RESTManagementAPI
-from api.exceptions import CentraObjectNotFound
-from common.assets.models import Asset
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.common.assets.models import Asset
 
 API_OBJECTS_TO_GET_AT_ONCE = 1000
 
@@ -28,12 +28,14 @@ def get_a_single_asset_from_centra(gc_api: RESTManagementAPI,
             if asset["name"] == asset_name:
                 return asset
             else:
-                raise CentraObjectNotFound(f"An asset named {asset_name} was not found in Centra")
+                raise CentraObjectNotFound(
+                    f"An asset named {asset_name} was not found in Centra")
     else:
         if response:
             return response[0]
         else:
-            raise CentraObjectNotFound(f"No asset matching the provided filter was found in Centra")
+            raise CentraObjectNotFound(
+                f"No asset matching the provided filter was found in Centra")
 
 
 def get_assets(gc_api: RESTManagementAPI,
@@ -49,7 +51,8 @@ def get_assets(gc_api: RESTManagementAPI,
     :return: A generator, yielding Asset objects
     """
     offset = 0
-    logger.debug(f"Requesting a chunk of {objects_to_get_at_once} assets from Centra")
+    logger.debug(
+        f"Requesting a chunk of {objects_to_get_at_once} assets from Centra")
     response = gc_api.list_assets(limit=objects_to_get_at_once,
                                   **filters)
     while len(response) > 0:
@@ -57,7 +60,8 @@ def get_assets(gc_api: RESTManagementAPI,
             yield Asset.from_api_dict(asset_dict)
         if len(response) == objects_to_get_at_once:
             offset += objects_to_get_at_once
-            logger.debug(f"Requesting {objects_to_get_at_once} assets from Centra, with offset {offset}")
+            logger.debug(
+                f"Requesting {objects_to_get_at_once} assets from Centra, with offset {offset}")
             response = gc_api.list_assets(limit=objects_to_get_at_once,
                                           offset=offset,
                                           **filters)

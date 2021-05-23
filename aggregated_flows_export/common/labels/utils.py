@@ -4,9 +4,9 @@ from collections import namedtuple
 from typing import Dict, List, Any, Generator
 from time import sleep
 
-from api.guardicore import RESTManagementAPI, ManagementAPITimeoutError
-from api.exceptions import CentraObjectNotFound
-from common.labels.exceptions import IllegalLabelException, LabelKeyOrValueIsEmpty, LabelContainsIllegalCharacters, \
+from aggregated_flows_export.api.guardicore import RESTManagementAPI, ManagementAPITimeoutError
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.common.labels.exceptions import IllegalLabelException, LabelKeyOrValueIsEmpty, LabelContainsIllegalCharacters, \
     LabelNotFoundInCentra
 
 LABEL_OBJECTS_TO_GET_AT_ONCE = 1000
@@ -19,7 +19,8 @@ CHARS_ILLEGAL_IN_LABELS = set("\\/:?][,")
 logger = logging.getLogger("guardicore." + __name__)
 
 
-class Label(namedtuple('Label', ['key', 'value'])):  # todo remove me after redirecting all the usage to models.ShortLabel
+# todo remove me after redirecting all the usage to models.ShortLabel
+class Label(namedtuple('Label', ['key', 'value'])):
     __slots__ = ()
 
     def __str__(self):
@@ -46,7 +47,8 @@ class NameCriterion(namedtuple('NameCriteria', ['name', 'criterion_type'])):
         elif self.criterion_type == "EQUALS":  # matches Exact name criteria in Centra UI
             return f"Asset name is exactly '{self.name}'"
         else:
-            raise UnexpectedNameCriteriaType(f"Named criteria '{repr(self)}' has an unknown criteria type")
+            raise UnexpectedNameCriteriaType(
+                f"Named criteria '{repr(self)}' has an unknown criteria type")
 
     @staticmethod
     def convert_string_to_name_dynamic_criteria_object(s: str):
@@ -75,7 +77,8 @@ class NameCriterion(namedtuple('NameCriteria', ['name', 'criterion_type'])):
             elif s.endswith('*') and num_of_asterisks_in_string == 1:
                 return NameCriterion(s.strip('*'), "STARTSWITH")
             return NameCriterion(s, 'WILDCARDS')
-        raise StringIsNotNameCriterion(f"The string {s} cannot be converted to a NameCriteria object")
+        raise StringIsNotNameCriterion(
+            f"The string {s} cannot be converted to a NameCriteria object")
 
     def to_export_string(self):
         """
@@ -94,7 +97,8 @@ class NameCriterion(namedtuple('NameCriteria', ['name', 'criterion_type'])):
         elif self.criterion_type == "EQUALS":
             return f"**{self.name}**"
         else:
-            raise UnexpectedNameCriteriaType(f"Unexpected criterion_type for name dynamic criteria '{repr(self)}'")
+            raise UnexpectedNameCriteriaType(
+                f"Unexpected criterion_type for name dynamic criteria '{repr(self)}'")
 
 
 class NameDynamicCriteriaException(Exception):
@@ -125,13 +129,15 @@ def get_centra_labels(gc_api: RESTManagementAPI, label_objects_to_get_at_once: i
     """
     centra_labels = list()
     offset = 0
-    logger.debug(f"Requesting a chunk of {label_objects_to_get_at_once} labels from Centra")
+    logger.debug(
+        f"Requesting a chunk of {label_objects_to_get_at_once} labels from Centra")
     try:
         response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once,
                                                  dynamic_criteria_limit=DYNAMIC_CRITERIA_LIMIT, **filters)
     except ManagementAPITimeoutError:
         logger.warning("The request for labels from Centra has timed out")
-        logger.info("Sleeping for 60 seconds and trying again with a lower the number of labels requested at once.")
+        logger.info(
+            "Sleeping for 60 seconds and trying again with a lower the number of labels requested at once.")
         label_objects_to_get_at_once = LABEL_OBJECTS_TO_GET_AT_ONCE_AFTER_TIMEOUT
         sleep(60)
         response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once,
@@ -139,7 +145,8 @@ def get_centra_labels(gc_api: RESTManagementAPI, label_objects_to_get_at_once: i
     while len(response["objects"]) > 0:
         for label_obj in response["objects"]:
             try:
-                validate_label_or_label_group(f"{label_obj.get('key')}: {label_obj.get('value')}")
+                validate_label_or_label_group(
+                    f"{label_obj.get('key')}: {label_obj.get('value')}")
                 centra_labels.append(label_obj)
             except IllegalLabelException as e:
                 logger.warning(f"Invalid label with label id {label_obj.get('id', 'N/A')} was found in Centra: {e}. "
@@ -147,7 +154,8 @@ def get_centra_labels(gc_api: RESTManagementAPI, label_objects_to_get_at_once: i
                 logger.debug(label_obj)
         if len(response["objects"]) == label_objects_to_get_at_once:
             offset += label_objects_to_get_at_once
-            logger.debug(f"Requesting {label_objects_to_get_at_once} labels from Centra, with offset {offset}")
+            logger.debug(
+                f"Requesting {label_objects_to_get_at_once} labels from Centra, with offset {offset}")
             response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once,
                                                      offset=offset,
                                                      dynamic_criteria_limit=DYNAMIC_CRITERIA_LIMIT,
@@ -171,13 +179,15 @@ def get_centra_labels_generator(gc_api: RESTManagementAPI,
     :return: a list containing all Centra label objects as they are returned from the API
     """
     offset = 0
-    logger.debug(f"Requesting a chunk of {label_objects_to_get_at_once} labels from Centra")
+    logger.debug(
+        f"Requesting a chunk of {label_objects_to_get_at_once} labels from Centra")
     try:
         response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once,
                                                  dynamic_criteria_limit=DYNAMIC_CRITERIA_LIMIT, **filters)
     except ManagementAPITimeoutError:
         logger.warning("The request for labels from Centra has timed out")
-        logger.info("Sleeping for 60 seconds and trying again with a lower the number of labels requested at once.")
+        logger.info(
+            "Sleeping for 60 seconds and trying again with a lower the number of labels requested at once.")
         label_objects_to_get_at_once = LABEL_OBJECTS_TO_GET_AT_ONCE_AFTER_TIMEOUT
         sleep(60)
         response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once,
@@ -185,7 +195,8 @@ def get_centra_labels_generator(gc_api: RESTManagementAPI,
     while len(response["objects"]) > 0:
         for label_obj in response["objects"]:
             try:
-                validate_label_or_label_group(f"{label_obj.get('key')}: {label_obj.get('value')}")
+                validate_label_or_label_group(
+                    f"{label_obj.get('key')}: {label_obj.get('value')}")
                 yield label_obj
             except IllegalLabelException as e:
                 logger.warning(f"Invalid label with label id {label_obj.get('id', 'N/A')} was found in Centra: {e}. "
@@ -193,7 +204,8 @@ def get_centra_labels_generator(gc_api: RESTManagementAPI,
                 logger.debug(label_obj)
         if len(response["objects"]) == label_objects_to_get_at_once:
             offset += label_objects_to_get_at_once
-            logger.debug(f"Requesting {label_objects_to_get_at_once} labels from Centra, with offset {offset}")
+            logger.debug(
+                f"Requesting {label_objects_to_get_at_once} labels from Centra, with offset {offset}")
             response = gc_api.list_visibility_labels(limit=label_objects_to_get_at_once, offset=offset,
                                                      dynamic_criteria_limit=DYNAMIC_CRITERIA_LIMIT, **filters)
         else:
@@ -205,7 +217,8 @@ def get_label_id(key: str, value: str, gc_api: RESTManagementAPI) -> str:
     try:
         return gc_api.get_label_id(key, value)
     except CentraObjectNotFound:
-        raise LabelNotFoundInCentra(f"The label {key}: {value} was not found in Centra")
+        raise LabelNotFoundInCentra(
+            f"The label {key}: {value} was not found in Centra")
 
 
 def validate_label_or_label_group(label: str) -> None:
@@ -218,22 +231,27 @@ def validate_label_or_label_group(label: str) -> None:
     :raises LabelContainsIllegalCharacters: If the label contains character which is illegal to use in labels
     """
     if not isinstance(label, str):
-        raise IllegalLabelException(f"The provided label '{repr(label)}' is not string")
+        raise IllegalLabelException(
+            f"The provided label '{repr(label)}' is not string")
     try:
-        key, value = label.split(':')  # ValueError will be raised if there more or less than 1 ':'
+        # ValueError will be raised if there more or less than 1 ':'
+        key, value = label.split(':')
     except ValueError:
-        raise IllegalLabelException(f"The label '{label}' does not contain exactly one colon (':')")
+        raise IllegalLabelException(
+            f"The label '{label}' does not contain exactly one colon (':')")
     if not len(key.strip()) > 0:
-        raise LabelKeyOrValueIsEmpty(f"The key of the label '{label}' is empty")
+        raise LabelKeyOrValueIsEmpty(
+            f"The key of the label '{label}' is empty")
     if not len(value.strip()) > 0:
-        raise LabelKeyOrValueIsEmpty(f"The value of the label '{label}' is empty")
+        raise LabelKeyOrValueIsEmpty(
+            f"The value of the label '{label}' is empty")
     illegal_chars_in_key = [c for c in key if c in CHARS_ILLEGAL_IN_LABELS]
     if illegal_chars_in_key:
-        raise LabelContainsIllegalCharacters(f"The key of the label '{label}' contains illegal characters: " 
+        raise LabelContainsIllegalCharacters(f"The key of the label '{label}' contains illegal characters: "
                                              f"{', '.join(illegal_chars_in_key)}")
     illegal_chars_in_value = [c for c in value if c in CHARS_ILLEGAL_IN_LABELS]
     if illegal_chars_in_value:
-        raise LabelContainsIllegalCharacters(f"The value of the label '{label}' contains illegal characters: " 
+        raise LabelContainsIllegalCharacters(f"The value of the label '{label}' contains illegal characters: "
                                              f"{', '.join(illegal_chars_in_value)}")
 
 
@@ -249,7 +267,8 @@ def labels_str_to_rule_format(labels_string: str, gc_api: RESTManagementAPI) -> 
     """
     structured_labels = {"or_labels": list()}
     # Normalize spaces
-    labels_string = labels_string.replace(", ", ",").replace(" ,", ",").replace("& ", "&").replace(" &", "&")
+    labels_string = labels_string.replace(", ", ",").replace(
+        " ,", ",").replace("& ", "&").replace(" &", "&")
     labels_string = labels_string.replace(": ", ":").replace(" :", ":").strip()
 
     for or_label in labels_string.split(','):
@@ -275,7 +294,8 @@ def labels_str_to_filter_format(labels_string: str, gc_api: RESTManagementAPI) -
 
     structured_labels = []
     if labels_string.count(':') > 1:  # format complex label expressions
-        labels_string = labels_string.replace(", ", ",").replace(" ,", ",").replace("& ", "&").replace(" &", "&")
+        labels_string = labels_string.replace(", ", ",").replace(
+            " ,", ",").replace("& ", "&").replace(" &", "&")
         for or_label in labels_string.split(','):
             and_labels = []
             for and_label in or_label.split('&'):

@@ -3,9 +3,9 @@ from typing import Dict, Union, Set, Any
 from enum import Enum
 from netaddr import IPNetwork
 
-from api.guardicore import RESTManagementAPI
-from common.policy.models import PortRange
-from common.labels.models import LabelsExpression, ShortLabelGroup
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.common.policy.models import PortRange
+from aggregated_flows_export.common.labels.models import LabelsExpression, ShortLabelGroup
 
 
 @dataclass
@@ -81,36 +81,48 @@ class MapFilter:
         """
         filter_dict = {}
         if self.connection_types:
-            filter_dict["connection_types"] = [connection_type.value for connection_type in self.connection_types]
+            filter_dict["connection_types"] = [
+                connection_type.value for connection_type in self.connection_types]
         if self.subnets:
-            filter_dict["ip_address"] = {"ip": [str(subnet) for subnet in self.subnets]}
+            filter_dict["ip_address"] = {
+                "ip": [str(subnet) for subnet in self.subnets]}
         if self.policy_actions:
-            filter_dict["policy"] = [policy_action.value for policy_action in self.policy_actions]
+            filter_dict["policy"] = [
+                policy_action.value for policy_action in self.policy_actions]
         if self.ports:
-            filter_dict["ports"] = [str(port_or_port_range) for port_or_port_range in self.ports]
+            filter_dict["ports"] = [str(port_or_port_range)
+                                    for port_or_port_range in self.ports]
         if self.policy_rulesets:
             filter_dict["policy_rulesets"] = list(self.policy_rulesets)
         if self.processes:
             filter_dict["process_filter"] = list(self.processes)
         if self.protocols:
-            filter_dict["protocols"] = [protocol.value for protocol in self.protocols]
+            filter_dict["protocols"] = [
+                protocol.value for protocol in self.protocols]
         if self.assets:
             filter_dict["vm"] = list(self.assets)
         if self.policy_rules:
-            filter_dict["policy_rule"] = {"policy_rule": list(self.policy_rules)}
+            filter_dict["policy_rule"] = {
+                "policy_rule": list(self.policy_rules)}
         if self.connections_from_subnets:
-            filter_dict["source_ip_address"] = {"ip": [str(subnet) for subnet in self.connections_from_subnets]}
+            filter_dict["source_ip_address"] = {
+                "ip": [str(subnet) for subnet in self.connections_from_subnets]}
         if self.connections_to_subnets:
-            filter_dict["destination_ip_address"] = {"ip": [str(subnet) for subnet in self.connections_to_subnets]}
+            filter_dict["destination_ip_address"] = {
+                "ip": [str(subnet) for subnet in self.connections_to_subnets]}
         if self.address_classifications:
-            filter_dict["internet_flow"] = [classification.value for classification in self.address_classifications]
+            filter_dict["internet_flow"] = [
+                classification.value for classification in self.address_classifications]
         if self.labels:
             filter_dict["user_label"] = self.labels.to_map_filter(gc_api)
         if self.connections_from_labels:
-            filter_dict["source_label"] = self.connections_from_labels.to_map_filter(gc_api)
+            filter_dict["source_label"] = self.connections_from_labels.to_map_filter(
+                gc_api)
         if self.connections_to_labels:
-            filter_dict["destination_label"] = self.connections_to_labels.to_map_filter(gc_api)
+            filter_dict["destination_label"] = self.connections_to_labels.to_map_filter(
+                gc_api)
         if self.label_groups:
-            filter_dict["label_groups"] = [str(label_group) for label_group in self.label_groups]
+            filter_dict["label_groups"] = [
+                str(label_group) for label_group in self.label_groups]
 
         return filter_dict

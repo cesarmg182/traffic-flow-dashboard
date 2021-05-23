@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from typing import Set, Dict, Any, Tuple, Union
 from netaddr import IPNetwork
 
-from api.guardicore import RESTManagementAPI
-from common.labels.models import LabelsExpression, ShortLabelGroup, ShortLabel, LabelsIntersection
-from common.assets.models import Asset
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.common.labels.models import LabelsExpression, ShortLabelGroup, ShortLabel, LabelsIntersection
+from aggregated_flows_export.common.assets.models import Asset
 
 
 @dataclass(order=True, frozen=True)
@@ -125,18 +125,24 @@ class PortsExpression:
     def __str__(self):
         if self.is_any:
             return "ANY"
-        expression_str = ', '.join(sorted([str(port) for port in self.include_ports])) if self.include_ports else ''
+        expression_str = ', '.join(sorted(
+            [str(port) for port in self.include_ports])) if self.include_ports else ''
         if self.include_port_ranges:
             if expression_str:
-                expression_str += ', ' + ', '.join(sorted([str(pr) for pr in self.include_port_ranges]))
+                expression_str += ', ' + \
+                    ', '.join(sorted([str(pr)
+                                      for pr in self.include_port_ranges]))
         if self.exclude_ports or self.exclude_port_ranges:
-            expression_str = expression_str + ', excluding: ' if expression_str else 'excluding: '
+            expression_str = expression_str + \
+                ', excluding: ' if expression_str else 'excluding: '
         if self.exclude_ports:
-            expression_str += ', '.join(sorted([str(port) for port in self.exclude_ports]))
+            expression_str += ', '.join(sorted([str(port)
+                                                for port in self.exclude_ports]))
         if self.include_port_ranges:
             if self.exclude_ports:
                 expression_str += ', '
-            expression_str += ', '.join(sorted([str(pr) for pr in self.include_port_ranges]))
+            expression_str += ', '.join(sorted([str(pr)
+                                                for pr in self.include_port_ranges]))
         return expression_str
 
     def to_csv_dict(self) -> Dict[str, str]:
@@ -166,9 +172,11 @@ class PortsExpression:
         returned from Centra API
         """
         include_ports = {int(port) for port in rule_dict["ports"]}
-        include_port_ranges = {PortRange(int(pr["start"]), int(pr["end"])) for pr in rule_dict["port_ranges"]}
+        include_port_ranges = {PortRange(int(pr["start"]), int(
+            pr["end"])) for pr in rule_dict["port_ranges"]}
         exclude_ports = {int(port) for port in rule_dict["exclude_ports"]}
-        exclude_port_ranges = {PortRange(int(pr["start"]), int(pr["end"])) for pr in rule_dict["exclude_port_ranges"]}
+        exclude_port_ranges = {PortRange(int(pr["start"]), int(
+            pr["end"])) for pr in rule_dict["exclude_port_ranges"]}
 
         return cls(include_ports, include_port_ranges, exclude_ports, exclude_port_ranges)
 
@@ -212,7 +220,8 @@ class RuleSide:
     def __post_init__(self):
         """ If self.labels is a ShortLabel or LabelsExpression, convert it to a LabelsExpression """
         if isinstance(self.labels, ShortLabel):
-            self.labels = LabelsExpression({LabelsIntersection((self.labels,))})
+            self.labels = LabelsExpression(
+                {LabelsIntersection((self.labels,))})
         if isinstance(self.labels, LabelsIntersection):
             self.labels = LabelsExpression({self.labels})
 
@@ -306,17 +315,21 @@ class RuleSide:
         if self.subnets:
             api_dict["subnets"] = [str(subnet) for subnet in self.subnets]
         if self.assets:
-            api_dict["asset_ids"] = [asset.get_or_query_asset_id(gc_api) for asset in self.assets]
+            api_dict["asset_ids"] = [asset.get_or_query_asset_id(
+                gc_api) for asset in self.assets]
         if self.processes:
             api_dict["processes"] = list(self.processes)
         if self.address_classification:
             api_dict["address_classification"] = self.address_classification.value.capitalize()
         if self.label_group:
-            api_dict["label_group_ids"] = [self.label_group.get_or_query_label_group_id(gc_api)]
+            api_dict["label_group_ids"] = [
+                self.label_group.get_or_query_label_group_id(gc_api)]
         if self.domains:
             api_dict["domains"] = list(self.domains)
         if self.user_groups:
-            raise NotImplemented("User groups are not implemented. Talk with Solution Center for more info")  #  todo implement me
+            # todo implement me
+            raise NotImplemented(
+                "User groups are not implemented. Talk with Solution Center for more info")
         return api_dict
 
     @classmethod
@@ -327,19 +340,24 @@ class RuleSide:
         :return: A tuple with two 'RuleSide' objects representing the rule's source destination respectively
         """
         if rule_dict["source"].get("labels"):
-            source_labels = LabelsExpression.from_rule_labels_dict(rule_dict["source"]["labels"])
+            source_labels = LabelsExpression.from_rule_labels_dict(
+                rule_dict["source"]["labels"])
         else:
             source_labels = None
-        source_subnets = {IPNetwork(item['subnet']) for item in rule_dict["source"].get("subnets", [])}
-        source_assets = {Asset.from_api_dict(asset_dict) for asset_dict in rule_dict["source"].get("assets", [])}
-        source_processes = {process for process in rule_dict["source"].get("processes", [])}
+        source_subnets = {IPNetwork(item['subnet'])
+                          for item in rule_dict["source"].get("subnets", [])}
+        source_assets = {Asset.from_api_dict(
+            asset_dict) for asset_dict in rule_dict["source"].get("assets", [])}
+        source_processes = {
+            process for process in rule_dict["source"].get("processes", [])}
         if rule_dict["source"].get("address_classification"):
             source_address_classification = RuleSide.AddressClassification(rule_dict["source"]
                                                                            ["address_classification"].lower())
         else:
             source_address_classification = None
         if rule_dict["source"].get("label_groups"):
-            source_label_group = ShortLabelGroup.from_api_dict(rule_dict["source"]["label_groups"][0])
+            source_label_group = ShortLabelGroup.from_api_dict(
+                rule_dict["source"]["label_groups"][0])
         else:
             source_label_group = None
         source_user_groups = {UserGroup.from_api_dict(ug_dict) for ug_dict
@@ -356,23 +374,28 @@ class RuleSide:
         )
 
         if rule_dict["destination"].get("labels"):
-            destination_labels = LabelsExpression.from_rule_labels_dict(rule_dict["destination"]["labels"])
+            destination_labels = LabelsExpression.from_rule_labels_dict(
+                rule_dict["destination"]["labels"])
         else:
             destination_labels = None
-        destination_subnets = {IPNetwork(item['subnet']) for item in rule_dict["destination"].get("subnets", [])}
+        destination_subnets = {IPNetwork(
+            item['subnet']) for item in rule_dict["destination"].get("subnets", [])}
         destination_assets = {Asset.from_api_dict(asset_dict) for asset_dict in
                               rule_dict["destination"].get("assets", [])}
-        destination_processes = {process for process in rule_dict["destination"].get("processes", [])}
+        destination_processes = {
+            process for process in rule_dict["destination"].get("processes", [])}
         if rule_dict["destination"].get("address_classification"):
             destination_address_classification = RuleSide.AddressClassification(
                 rule_dict["destination"]["address_classification"].lower())
         else:
             destination_address_classification = None
         if rule_dict["destination"].get("label_groups"):
-            destination_label_group = ShortLabelGroup.from_api_dict(rule_dict["destination"]["label_groups"][0])
+            destination_label_group = ShortLabelGroup.from_api_dict(
+                rule_dict["destination"]["label_groups"][0])
         else:
             destination_label_group = None
-        destination_domains = {domain for domain in rule_dict["destination"].get("domains", [])}
+        destination_domains = {
+            domain for domain in rule_dict["destination"].get("domains", [])}
 
         destination = cls(
             labels=destination_labels,
@@ -449,7 +472,8 @@ class PolicyRule:
                 rule_similarity_attributes.append(str(self.source.labels))
             if source_processes:
                 if self.source.processes:
-                    rule_similarity_attributes.append(", ".join(sorted([process for process in self.source.processes])))
+                    rule_similarity_attributes.append(
+                        ", ".join(sorted([process for process in self.source.processes])))
                 else:
                     rule_similarity_attributes.append("")
         if destination:
@@ -466,7 +490,8 @@ class PolicyRule:
         if dest_ports:
             rule_similarity_attributes.append(str(self.dest_ports))
         if protocols:
-            rule_similarity_attributes.append(', '.join(sorted([protocol.value for protocol in self.protocols])))
+            rule_similarity_attributes.append(
+                ', '.join(sorted([protocol.value for protocol in self.protocols])))
         if ruleset:
             rule_similarity_attributes.append(self.ruleset)
         if enabled:
@@ -549,7 +574,8 @@ class PolicyRule:
         enabled = rule_dict["enabled"]
         rule_id = rule_dict["id"]
         ruleset = rule_dict["ruleset_name"]
-        protocols = {PolicyRule.Protocol(protocol.upper()) for protocol in rule_dict["ip_protocols"]}
+        protocols = {PolicyRule.Protocol(protocol.upper())
+                     for protocol in rule_dict["ip_protocols"]}
         dest_ports = PortsExpression.from_rule_api_dict(rule_dict)
         source, destination = RuleSide.from_rule_api_dict(rule_dict)
         return cls(

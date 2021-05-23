@@ -8,7 +8,7 @@ from functools import wraps
 from typing import List, Dict, Union, Any, Optional
 from collections import defaultdict
 
-from api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
 
 try:
     # Python 3

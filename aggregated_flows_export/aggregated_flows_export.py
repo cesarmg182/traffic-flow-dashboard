@@ -16,17 +16,17 @@ from getpass import getpass
 from argparse import ArgumentParser
 from typing import Dict, Union, List, Any, Iterable, Tuple, Set
 
-from api.guardicore import RESTManagementAPI, ManagementAPIError
-from common.common import get_gc_api, remove_empty_values, validate_python_version
-from common.logger import Logger
-from common.models.aggregated_flow import AggregatedFlow
-from common.maps.utils import generate_saved_map, generate_permalink, \
+from aggregated_flows_export.api.guardicore import RESTManagementAPI, ManagementAPIError
+from aggregated_flows_export.common.common import get_gc_api, remove_empty_values, validate_python_version
+from aggregated_flows_export.common.logger import Logger
+from aggregated_flows_export.common.models.aggregated_flow import AggregatedFlow
+from aggregated_flows_export.common.maps.utils import generate_saved_map, generate_permalink, \
     get_existing_saved_map_data, export_flows_from_permalink, get_map_filter_from_args
-from common.maps.models import MapFilter
-from common.maps.exceptions import SavedMapException, NoFlowsMatchTheFilter, MapExportTimedOut, \
+from aggregated_flows_export.common.maps.models import MapFilter
+from aggregated_flows_export.common.maps.exceptions import SavedMapException, NoFlowsMatchTheFilter, MapExportTimedOut, \
     GraphGenerationTimedOut, SavedMapIsEmpty
-from common.labels.exceptions import IllegalLabelException, LabelNotFoundInCentra
-from save_flows_to_xlsx import save_flows_to_xlsx
+from aggregated_flows_export.common.labels.exceptions import IllegalLabelException, LabelNotFoundInCentra
+from .save_flows_to_xlsx import save_flows_to_xlsx
 
 DEFAULT_ARGUMENTS_FILE_LOCATION = Path(os.path.dirname(
     os.path.realpath(__file__))).joinpath("generated_yaml.yaml")

@@ -24,7 +24,7 @@ from pathlib import Path
 # from cryptography.hazmat.primitives.asymmetric import rsa
 # from cryptography.hazmat.primitives import serialization
 
-from api.guardicore import RESTManagementAPI, ManagementAPIError
+from aggregated_flows_export.api.guardicore import RESTManagementAPI, ManagementAPIError
 
 DEFAULT_LOGGER_FORMAT = "%(asctime)s:%(levelname)s: %(message)s"
 DEFAULT_LOGGING_LEVEL = logging.INFO
@@ -105,7 +105,8 @@ def get_gc_api(management_address: str, auth_username: str, auth_password: str, 
         except NameError:
             pass
         except ManagementAPIError as error:
-            logger.debug(f"Could not logout properly from Centra API. {repr(error)}")
+            logger.debug(
+                f"Could not logout properly from Centra API. {repr(error)}")
 
 
 def datetime_to_timestamp(dt: datetime) -> int:
@@ -170,7 +171,8 @@ def str_to_bool(s: str) -> bool:
         return True
     elif s.lower() == "false":
         return False
-    raise TypeError(f"{s} cannot be converted to boolean. Please provide True or False")
+    raise TypeError(
+        f"{s} cannot be converted to boolean. Please provide True or False")
 
 
 def write_ts_to_file(ts, export_path):
@@ -186,7 +188,8 @@ def write_ts_to_file(ts, export_path):
             ts_as_string = ts.dump()
             # W/A terrascript naming issues
             ts_as_string = ts_as_string.replace("name_workaround", "name")
-            ts_as_string = ts_as_string.replace("network_interface2", "network_interface")
+            ts_as_string = ts_as_string.replace(
+                "network_interface2", "network_interface")
             ts_as_string = ts_as_string.replace("disk2", "disk")
             f.write(ts_as_string)
     except IOError as error:
@@ -282,7 +285,8 @@ def initiate_logger(logger_name: str = None, verbose: bool = False, log_file_pat
         log_level = DEFAULT_LOGGING_LEVEL
     logging.basicConfig(format=DEFAULT_LOGGER_FORMAT, level=log_level)
     if log_file_path:
-        log_file_path = log_file_path.replace("*", datetime.now().strftime("%Y-%m-%d-%H.%M.%S"))
+        log_file_path = log_file_path.replace(
+            "*", datetime.now().strftime("%Y-%m-%d-%H.%M.%S"))
         fh = logging.FileHandler(Path(log_file_path))
         fh.setLevel(log_level)
         fh.setFormatter(formatter)

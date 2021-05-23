@@ -3,7 +3,7 @@ from typing import Dict, List
 
 import xlsxwriter
 
-from common.models.aggregated_flow import AggregatedFlow
+from aggregated_flows_export.common.models.aggregated_flow import AggregatedFlow
 
 
 def save_flows_to_xlsx(flows: List[AggregatedFlow], yaml_args: Dict, out_file_name: str,
@@ -36,13 +36,15 @@ def save_flows_to_xlsx(flows: List[AggregatedFlow], yaml_args: Dict, out_file_na
         aggregation_keys = aggregation_keys if aggregation_keys is not None else []
         fieldnames = []
         approved_filed_txt = 'Approved (YES / NO)'
-        fieldnames.extend([f'Source {key} Label Value' for key in aggregation_keys])
+        fieldnames.extend(
+            [f'Source {key} Label Value' for key in aggregation_keys])
         fieldnames.extend(['Source Asset',
                            'Source IP',
                            'Source Process',
                            'Source Process Application Name',
                            'Source Additional Labels'])
-        fieldnames.extend([f'Destination {key} Label Value' for key in aggregation_keys])
+        fieldnames.extend(
+            [f'Destination {key} Label Value' for key in aggregation_keys])
         fieldnames.extend(['Destination Asset',
                            'Destination IP',
                            'Destination Process',
@@ -79,7 +81,8 @@ def save_flows_to_xlsx(flows: List[AggregatedFlow], yaml_args: Dict, out_file_na
         row, col = 0, 0
         args_page.set_column(col, col, width=39)
         args_page.set_column(col + 1, col + 1, width=28)
-        args_page.merge_range(row, col, row, col + 4, f"Parameters for {out_file_name}", title_format)
+        args_page.merge_range(row, col, row, col + 4,
+                              f"Parameters for {out_file_name}", title_format)
         row += 1
         if map_link:
             if flows_are_exported_from_a_pre_existing_map:
@@ -93,31 +96,38 @@ def save_flows_to_xlsx(flows: List[AggregatedFlow], yaml_args: Dict, out_file_na
         args_page.write(row + 1, col, "value")
         for i, (filt, values) in enumerate(yaml_args.get("include_filter", {}).items(), 1):
             args_page.write(row, col + i, filt, bold)
-            args_page.write(row + 1, col + i, ', '.join([str(value) for value in values]))
+            args_page.write(row + 1, col + i,
+                            ', '.join([str(value) for value in values]))
         row += 3
         args_page.write(row, col, "Exclude Filter", bold)
         args_page.write(row + 1, col, "value")
         for i, (filt, values) in enumerate(yaml_args.get("exclude_filter", {}).items(), 1):
             args_page.write(row, col + i, filt, bold)
-            args_page.write(row + 1, col + i, ', '.join([str(value) for value in values]))
+            args_page.write(row + 1, col + i,
+                            ', '.join([str(value) for value in values]))
         row += 3
         args_page.write(row, col, "Flows start time", bold)
-        args_page.write(row, col + 1, report_flows_start_time.strftime('%Y-%m-%d %H:%M:%S'))
+        args_page.write(
+            row, col + 1, report_flows_start_time.strftime('%Y-%m-%d %H:%M:%S'))
         row += 1
         args_page.write(row, col, "Flows end time", bold)
-        args_page.write(row, col + 1, report_flows_end_time.strftime('%Y-%m-%d %H:%M:%S'))
+        args_page.write(
+            row, col + 1, report_flows_end_time.strftime('%Y-%m-%d %H:%M:%S'))
         row += 2
         if "aggregation_keys" in yaml_args:
             args_page.write(row, col, "aggregation_keys", bold)
-            args_page.write(row, col + 1, ', '.join(yaml_args["aggregation_keys"]))
+            args_page.write(
+                row, col + 1, ', '.join(yaml_args["aggregation_keys"]))
             row += 1
         if "aggregate_similar_flows" in yaml_args:
             args_page.write(row, col, "aggregate_similar_flows", bold)
             args_page.write(row, col + 1, yaml_args["aggregate_similar_flows"])
             row += 1
         if "aggregate_flows_with_different_processes" in yaml_args:
-            args_page.write(row, col, "aggregate_flows_with_different_processes", bold)
-            args_page.write(row, col + 1, yaml_args["aggregate_flows_with_different_processes"])
+            args_page.write(
+                row, col, "aggregate_flows_with_different_processes", bold)
+            args_page.write(
+                row, col + 1, yaml_args["aggregate_flows_with_different_processes"])
             row += 1
         if "ignore_internal_traffic" in yaml_args:
             args_page.write(row, col, "ignore_internal_traffic", bold)
@@ -125,7 +135,8 @@ def save_flows_to_xlsx(flows: List[AggregatedFlow], yaml_args: Dict, out_file_na
             row += 1
         if "enhanced_flow_csv_export_is_on" in yaml_args:
             args_page.write(row, col, "enhanced_flow_csv_export_is_on", bold)
-            args_page.write(row, col + 1, yaml_args["enhanced_flow_csv_export_is_on"])
+            args_page.write(
+                row, col + 1, yaml_args["enhanced_flow_csv_export_is_on"])
             row += 1
         if "expand_subnets" in yaml_args:
             args_page.write(row, col, "expand_subnets", bold)

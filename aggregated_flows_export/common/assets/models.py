@@ -2,8 +2,8 @@ from dataclasses import dataclass
 from typing import Dict, Any, Tuple
 from enum import Enum
 
-from api.guardicore import RESTManagementAPI
-from api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
 
 
 @dataclass()

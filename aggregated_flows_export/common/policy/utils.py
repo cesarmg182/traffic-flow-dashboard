@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 from typing import Generator, Dict, List, Set, Tuple, Any
 from netaddr import IPSet, IPAddress, IPNetwork
 
-from api.guardicore import RESTManagementAPI
-from api.exceptions import CentraObjectNotFound
-from common.policy.models import PolicyRule, RuleSide
-from common.assets.utils import get_a_single_asset_from_centra, get_assets
-from common.labels.models import ShortLabel, LabelsIntersection, LabelsExpression
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.common.policy.models import PolicyRule, RuleSide
+from aggregated_flows_export.common.assets.utils import get_a_single_asset_from_centra, get_assets
+from aggregated_flows_export.common.labels.models import ShortLabel, LabelsIntersection, LabelsExpression
 
 API_OBJECTS_TO_GET_AT_ONCE = 1000
 MAXIMUM_AMOUNT_OF_IP_ELEMENTS_PER_RULE_SIDE = 9000
@@ -26,6 +26,7 @@ class RulesSizeManager:
     NOTE - Due to the complexity of the rules derivation process in Centra the sizes calculated by this class are
     mere approximations - the actual rule size seen by the agent may vary to both directions.
     """
+
     def __init__(self,
                  gc_api: RESTManagementAPI,
                  max_rule_side_size: int = MAXIMUM_AMOUNT_OF_IP_ELEMENTS_PER_RULE_SIDE):
@@ -38,7 +39,8 @@ class RulesSizeManager:
         self.labels_criteria_cache: Dict[str, IPSet] = {}
         self.assets_matching_labels_cache: Dict[str, Set[str]] = {}
         self.labels_intersection_criteria_cache: Dict[str, IPSet] = {}
-        self.assets_matching_labels_intersection_cache: Dict[str, Set[str]] = {}
+        self.assets_matching_labels_intersection_cache: Dict[str, Set[str]] = {
+        }
         self.labels_expression_criteria_cache: Dict[str, IPSet] = {}
         self.assets_matching_labels_expression_cache: Dict[str, Set[str]] = {}
 
@@ -62,7 +64,8 @@ class RulesSizeManager:
         try:
             asset = get_a_single_asset_from_centra(self.gc_api, id=asset_id)
         except CentraObjectNotFound:
-            raise CentraObjectNotFound(f"There is no asset with id {asset_id} in Centra")
+            raise CentraObjectNotFound(
+                f"There is no asset with id {asset_id} in Centra")
         self.logger.debug(f"Fetched the asset with id {asset_id} from Centra")
         asset_id = asset['id']
         asset_name = asset['name']
@@ -87,10 +90,13 @@ class RulesSizeManager:
             return self.assets_size_cache[asset_id]
 
         try:
-            asset = get_a_single_asset_from_centra(self.gc_api, asset_name=asset_name)
+            asset = get_a_single_asset_from_centra(
+                self.gc_api, asset_name=asset_name)
         except CentraObjectNotFound:
-            raise CentraObjectNotFound(f"There is no asset with name {asset_name} in Centra")
-        self.logger.debug(f"Fetched the asset with name {asset_name} from Centra")
+            raise CentraObjectNotFound(
+                f"There is no asset with name {asset_name} in Centra")
+        self.logger.debug(
+            f"Fetched the asset with name {asset_name} from Centra")
         asset_id = asset['id']
         self.asset_id_to_asset_name_mapping[asset_id] = asset_name
         self.asset_name_to_asset_id_mapping[asset_name] = asset_id
@@ -117,7 +123,8 @@ class RulesSizeManager:
                                                              labels=label_api_dict["id"])
         dynamically_matching_asset_ids = set()
         for asset in assets_that_match_the_label_dynamically:
-            self.logger.debug(f"Fetched the asset with name {asset} from Centra")
+            self.logger.debug(
+                f"Fetched the asset with name {asset} from Centra")
             dynamically_matching_asset_ids.add(asset.id)
             self.asset_id_to_asset_name_mapping[asset.id] = asset.name
             self.asset_name_to_asset_id_mapping[asset.name] = asset.id
@@ -142,9 +149,11 @@ class RulesSizeManager:
         if label.name in self.labels_size_cache:
             return self.labels_size_cache[label.name]
 
-        response = self.gc_api.list_visibility_labels(key=label.key, value=label.value)["objects"]
+        response = self.gc_api.list_visibility_labels(
+            key=label.key, value=label.value)["objects"]
         if not response:
-            raise CentraObjectNotFound(f"The label {label} was not found in Centra")
+            raise CentraObjectNotFound(
+                f"The label {label} was not found in Centra")
 
         self.logger.debug(f"Fetched the label {label} from Centra")
         label_dict = response[0]
@@ -161,7 +170,8 @@ class RulesSizeManager:
             else:
                 _ = self.get_asset_size_by_id(asset_id)
                 asset_ips = self.asset_ips_cache[asset_id]
-            asset_ips_that_are_not_in_the_labels_criteria = [ip for ip in asset_ips if ip not in label_criteria_ipset]
+            asset_ips_that_are_not_in_the_labels_criteria = [
+                ip for ip in asset_ips if ip not in label_criteria_ipset]
             label_size += len(asset_ips_that_are_not_in_the_labels_criteria)
 
         self.labels_size_cache[label.name] = label_size
@@ -195,7 +205,8 @@ class RulesSizeManager:
 
         first_label = labels_intersection.labels[0]
         labels_intersection_criteria = self.labels_criteria_cache[first_label.name]
-        assets_matching_the_labels_intersection = self.assets_matching_labels_cache[first_label.name]
+        assets_matching_the_labels_intersection = self.assets_matching_labels_cache[
+            first_label.name]
         for label in labels_intersection.labels[1:]:
             label_criteria = self.labels_criteria_cache[label.name]
             labels_intersection_criteria = labels_intersection_criteria & label_criteria
@@ -203,11 +214,13 @@ class RulesSizeManager:
             assets_matching_the_labels_intersection = (assets_matching_the_labels_intersection &
                                                        assets_matching_the_label)
 
-        self.labels_intersection_criteria_cache[str(labels_intersection)] = labels_intersection_criteria
+        self.labels_intersection_criteria_cache[str(
+            labels_intersection)] = labels_intersection_criteria
         self.assets_matching_labels_intersection_cache[str(labels_intersection)] = \
             assets_matching_the_labels_intersection
 
-        labels_intersection_size = len(labels_intersection_criteria.iter_cidrs())
+        labels_intersection_size = len(
+            labels_intersection_criteria.iter_cidrs())
         for asset_id in assets_matching_the_labels_intersection:
             if asset_id in self.asset_ips_cache:
                 asset_ips = self.asset_ips_cache[asset_id]
@@ -216,9 +229,11 @@ class RulesSizeManager:
                 asset_ips = self.asset_ips_cache[asset_id]
             asset_ips_that_are_not_in_the_labels_intersection_criteria = [ip for ip in asset_ips if
                                                                           ip not in labels_intersection_criteria]
-            labels_intersection_size += len(asset_ips_that_are_not_in_the_labels_intersection_criteria)
+            labels_intersection_size += len(
+                asset_ips_that_are_not_in_the_labels_intersection_criteria)
 
-        self.labels_intersection_size_cache[str(labels_intersection)] = labels_intersection_size
+        self.labels_intersection_size_cache[str(
+            labels_intersection)] = labels_intersection_size
 
         return labels_intersection_size
 
@@ -242,7 +257,8 @@ class RulesSizeManager:
             self.labels_expression_criteria_cache[str(labels_expression)] = \
                 self.labels_intersection_criteria_cache[str(labels_expression)]
             self.assets_matching_labels_expression_cache[str(labels_expression)] = \
-                self.assets_matching_labels_intersection_cache[str(labels_expression)]
+                self.assets_matching_labels_intersection_cache[str(
+                    labels_expression)]
             self.labels_expression_size_cache[str(labels_expression)] = \
                 self.labels_intersection_size_cache[str(labels_expression)]
             return self.labels_expression_size_cache[str(labels_expression)]
@@ -250,15 +266,19 @@ class RulesSizeManager:
         labels_expression_criteria = IPSet()
         assets_matching_the_labels_expression = set()
         for labels_intersection in labels_expression.labels_intersections:
-            labels_intersection_criteria = self.labels_intersection_criteria_cache[str(labels_intersection)]
+            labels_intersection_criteria = self.labels_intersection_criteria_cache[str(
+                labels_intersection)]
             labels_expression_criteria = labels_expression_criteria | labels_intersection_criteria
             assets_matching_the_labels_intersection = \
-                self.assets_matching_labels_intersection_cache[str(labels_intersection)]
+                self.assets_matching_labels_intersection_cache[str(
+                    labels_intersection)]
             assets_matching_the_labels_expression = (assets_matching_the_labels_expression |
                                                      assets_matching_the_labels_intersection)
 
-        self.assets_matching_labels_expression_cache[str(labels_expression)] = assets_matching_the_labels_expression
-        self.labels_expression_criteria_cache[str(labels_expression)] = labels_expression_criteria
+        self.assets_matching_labels_expression_cache[str(
+            labels_expression)] = assets_matching_the_labels_expression
+        self.labels_expression_criteria_cache[str(
+            labels_expression)] = labels_expression_criteria
 
         labels_expression_size = len(labels_expression_criteria.iter_cidrs())
         for asset_id in assets_matching_the_labels_expression:
@@ -269,9 +289,11 @@ class RulesSizeManager:
                 asset_ips = self.asset_ips_cache[asset_id]
             asset_ips_that_are_not_in_the_labels_expression_criteria = [ip for ip in asset_ips if
                                                                         ip not in labels_expression_criteria]
-            labels_expression_size += len(asset_ips_that_are_not_in_the_labels_expression_criteria)
+            labels_expression_size += len(
+                asset_ips_that_are_not_in_the_labels_expression_criteria)
 
-        self.labels_expression_size_cache[str(labels_expression)] = labels_expression_size
+        self.labels_expression_size_cache[str(
+            labels_expression)] = labels_expression_size
 
         return labels_expression_size
 
@@ -297,7 +319,8 @@ class RulesSizeManager:
         elif rule_side.subnets:
             return len(rule_side.subnets)
         elif rule_side.label_groups:
-            raise NotImplementedError("Calculating the size of a label group is not implemented")
+            raise NotImplementedError(
+                "Calculating the size of a label group is not implemented")
         else:
             return 0
 
@@ -309,7 +332,8 @@ class RulesSizeManager:
 def get_latest_policy_revision(gc_api: RESTManagementAPI) -> int:
     """Return the latest policy revision in Centra"""
     to_time = datetime.now()
-    from_time = to_time - timedelta(days=1080)  # Assuming there were policy published in the last 3 year
+    # Assuming there were policy published in the last 3 year
+    from_time = to_time - timedelta(days=1080)
     return gc_api.get_policy_revisions(from_time, to_time)[0]["revision_number"]
 
 
@@ -326,7 +350,8 @@ def get_policy_rules(gc_api: RESTManagementAPI,
     :return: A generator, yielding PolicyRule objects
     """
     offset = 0
-    logger.debug(f"Requesting a chunk of {objects_to_get_at_once} rules from Centra")
+    logger.debug(
+        f"Requesting a chunk of {objects_to_get_at_once} rules from Centra")
     response = gc_api.get_segmentation_rules(limit=objects_to_get_at_once,
                                              **filters)
     while len(response["objects"]) > 0:
@@ -334,7 +359,8 @@ def get_policy_rules(gc_api: RESTManagementAPI,
             yield PolicyRule.from_api_dict(rule_dict)
         if len(response["objects"]) == objects_to_get_at_once:
             offset += objects_to_get_at_once
-            logger.debug(f"Requesting {objects_to_get_at_once} rules from Centra, with offset {offset}")
+            logger.debug(
+                f"Requesting {objects_to_get_at_once} rules from Centra, with offset {offset}")
             response = gc_api.get_segmentation_rules(limit=objects_to_get_at_once,
                                                      offset=offset,
                                                      **filters)

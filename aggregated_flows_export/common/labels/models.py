@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from typing import Set, Dict, Any, Union, Tuple, List
 
-from api.guardicore import RESTManagementAPI
-from api.exceptions import CentraObjectNotFound
-from common.labels.exceptions import LabelNotFoundInCentra
+from aggregated_flows_export.api.guardicore import RESTManagementAPI
+from aggregated_flows_export.api.exceptions import CentraObjectNotFound
+from aggregated_flows_export.common.labels.exceptions import LabelNotFoundInCentra
 
 
 @dataclass
@@ -151,7 +151,8 @@ class LabelsIntersection:
     def __post_init__(self):
         """ Raise ValueError if the more than one label with the same key was provided """
         if len(set(self.keys)) != len(self.labels):
-            raise ValueError("Label intersection cannot contain more than one label for the same key")
+            raise ValueError(
+                "Label intersection cannot contain more than one label for the same key")
 
     def __str__(self):
         return f"{' & '.join([str(label) for label in self.labels])}"
